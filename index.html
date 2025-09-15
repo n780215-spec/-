@@ -115,6 +115,7 @@ const memberBonusRate = {
 };
 let selectedLevel = "會員";
 
+// 會員等級按鈕
 const memberButtons = document.getElementById("memberButtons");
 Object.keys(memberBonusRate).forEach(level=>{
   const btn = document.createElement("button");
@@ -129,7 +130,7 @@ Object.keys(memberBonusRate).forEach(level=>{
   memberButtons.appendChild(btn);
 });
 
-// 會員資格
+// 會員資格按鈕
 const membershipFee = { "新會員": 1000, "續約會員": 500 };
 let selectedMembership = "新會員";
 const membershipButtons = document.getElementById("membershipButtons");
@@ -146,7 +147,7 @@ Object.keys(membershipFee).forEach(type=>{
   membershipButtons.appendChild(btn);
 });
 
-// 產品表格
+// 產品表格與監聽輸入
 const tableBody = document.getElementById("productTable");
 products.forEach((p,index)=>{
   const row = document.createElement("tr");
@@ -158,12 +159,11 @@ products.forEach((p,index)=>{
   `;
   tableBody.appendChild(row);
 
-  // 監聽輸入變化，實現即時更新
   const input = row.querySelector("input");
   input.addEventListener("input", updateSummary);
 });
 
-// 計算贈品
+// 贈品計算
 function anniversaryGiftsByMoney(money){
   if(money>=200000) return ["52,000 天麗幣","天麗隨行杯 3 個"];
   if(money>=100000) return ["21,000 天麗幣","天麗隨行杯 2 個"];
@@ -173,7 +173,7 @@ function anniversaryGiftsByMoney(money){
   return [];
 }
 
-// 更新清單與金額（即時更新）
+// 即時更新清單與金額
 function updateSummary(){
   let totalMoney = membershipFee[selectedMembership];
   let totalPV = 0, listHTML="", healthBonusList=[];
@@ -217,11 +217,20 @@ function updateSummary(){
   document.getElementById("resultBox").innerHTML = result;
 }
 
-// 下載圖片功能
+// 優化圖片生成
 function downloadAsImage(){
   const element = document.getElementById("resultBox");
-  html2canvas(element).then(canvas => {
-    const imgData = canvas.toDataURL("image/png");
+  html2canvas(element, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+    const padding = 20;
+    const paddedCanvas = document.createElement("canvas");
+    paddedCanvas.width = canvas.width + padding*2;
+    paddedCanvas.height = canvas.height + padding*2;
+    const ctx = paddedCanvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+    ctx.drawImage(canvas, padding, padding);
+
+    const imgData = paddedCanvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = imgData;
     link.download = "天麗購買清單.png";
