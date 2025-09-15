@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
 <title>天麗周年慶購買清單</title>
-  
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4CAF50"/>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,13 +17,14 @@
 <style>
 body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
 h2,h3 { color: #333; font-size: 16px; margin: 8px 0; }
-.table-container { overflow-x: auto; margin-bottom: 8px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+.table-container { margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
 th { background: #eee; font-size: 13px; }
 .quantity-control { display: flex; justify-content: center; align-items: center; gap: 4px; }
 .quantity-control button { padding: 2px 6px; font-size: 14px; }
-.quantity-control input { width: 40px; text-align: center; }
+.quantity-control input { width: 36px; text-align: center; }
+
 .btn { padding: 10px; background: #0078D7; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; margin: 8px 0; }
 .btn:hover { background: #005a9e; }
 .highlight { color: red; font-weight: bold; }
@@ -33,19 +34,13 @@ ul { padding-left: 18px; margin: 4px 0; }
 .level-buttons button, .membership-buttons button { flex: 1; min-width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; background: #f1f1f1; cursor: pointer; font-size: 12px; }
 .level-buttons button.active, .membership-buttons button.active { background: #0078D7; color: white; border-color: #0078D7; }
 
-/* 浮動區塊 */
-#floatingSummary {
-  position: fixed;
-  bottom: 70px;
-  right: 10px;
-  background: #0078D7;
-  color: white;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  z-index: 999;
-  text-align: right;
+/* 手機螢幕自動調整 */
+@media (max-width: 480px) {
+  body { font-size: 12px; }
+  table { font-size: 12px; }
+  th, td { padding: 3px; }
+  .quantity-control button { font-size: 12px; padding: 2px 5px; }
+  .quantity-control input { width: 32px; font-size: 12px; }
 }
 </style>
 </head>
@@ -80,9 +75,6 @@ ul { padding-left: 18px; margin: 4px 0; }
 <!-- 功能按鈕 -->
 <button class="btn" onclick="resetForm()">🔄 重新整理</button>
 <button class="btn" onclick="downloadAsImage()">📥 下載清單圖片</button>
-
-<!-- 浮動即時計算區塊 -->
-<div id="floatingSummary">💰 0 元<br>📊 PV 0</div>
 
 <script>
 const products = [
@@ -148,30 +140,27 @@ Object.keys(membershipFee).forEach(type=>{
 const tableBody=document.getElementById("productTable");
 products.forEach((p,index)=>{
   const row=document.createElement("tr");
-  row.innerHTML=`
-    <td>${p.name}</td>
-    <td>${p.price}</td>
-    <td>${p.pv}</td>
-    <td>
-      <div class="quantity-control">
-        <button onclick="changeQty(${index},-1)">-</button>
-        <input type="number" id="qty${index}" min="0" value="0" readonly>
-        <button onclick="changeQty(${index},1)">+</button>
-      </div>
-    </td>`;
+  row.innerHTML=`<td>${p.name}</td><td>${p.price}</td><td>${p.pv}</td>
+  <td>
+    <div class="quantity-control">
+      <button onclick="changeQty(${index},-1)">-</button>
+      <input type="number" id="qty${index}" min="0" value="0">
+      <button onclick="changeQty(${index},1)">+</button>
+    </div>
+  </td>`;
   tableBody.appendChild(row);
+  row.querySelector("input").addEventListener("input",updateSummary);
 });
 
-// 改變數量
 function changeQty(index,delta){
   const input=document.getElementById(`qty${index}`);
-  let value=parseInt(input.value)||0;
-  value=Math.max(0,value+delta);
-  input.value=value;
+  let val=parseInt(input.value)||0;
+  val=Math.max(0,val+delta);
+  input.value=val;
   updateSummary();
 }
 
-// 贈品
+// 贈品規則
 function anniversaryGiftsByMoney(money){
   if(money>=200000) return ["52,000 天麗幣","天麗隨行杯 3 個"];
   if(money>=100000) return ["21,000 天麗幣","天麗隨行杯 2 個"];
@@ -227,20 +216,6 @@ function updateSummary(){
   } else { result+=`<p>🎁 周年慶贈品：無符合回饋</p>`; }
 
   document.getElementById("resultBox").innerHTML=result;
-
-  // 更新浮動區塊
-  document.getElementById("floatingSummary").innerHTML=`💰 ${productTotal} 元<br>📊 PV ${totalPV}`;
-}
-
-// 重新整理
-function resetForm(){
-  products.forEach((p,index)=>document.getElementById(`qty${index}`).value=0);
-  selectedLevel="會員";
-  selectedMembership="新會員";
-  document.querySelectorAll(".level-buttons button, .membership-buttons button").forEach(b=>b.classList.remove("active"));
-  document.querySelector(".level-buttons button").classList.add("active");
-  document.querySelector(".membership-buttons button").classList.add("active");
-  updateSummary();
 }
 
 // 下載清單圖片
@@ -253,6 +228,17 @@ function downloadAsImage(){
     link.download="天麗購買清單.png";
     link.click();
   });
+}
+
+// 重新整理
+function resetForm(){
+  products.forEach((p,index)=>document.getElementById(`qty${index}`).value=0);
+  selectedLevel="會員";
+  selectedMembership="新會員";
+  document.querySelectorAll(".level-buttons button,.membership-buttons button").forEach(b=>b.classList.remove("active"));
+  document.querySelector(".level-buttons button").classList.add("active");
+  document.querySelector(".membership-buttons button").classList.add("active");
+  updateSummary();
 }
 </script>
 </body>
