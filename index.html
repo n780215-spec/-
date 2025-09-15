@@ -13,6 +13,9 @@
   <meta name="apple-mobile-web-app-title" content="天麗清單">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <!-- html2canvas 用於生成圖片 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <!-- CSS -->
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
@@ -76,10 +79,10 @@
   </table>
 </div>
 
-<button class="btn" onclick="generateSummary()">產生購買清單</button>
+<button class="btn" onclick="downloadAsImage()">下載 / 分享清單圖片</button>
 
 <div class="result" id="resultBox">
-  👉 請輸入數量後點選「產生購買清單」
+  👉 請輸入數量，或選擇會員資格、會員等級
 </div>
 
 <script>
@@ -120,6 +123,7 @@ Object.keys(memberBonusRate).forEach(level=>{
     selectedLevel = level;
     document.querySelectorAll(".level-buttons button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
+    updateSummary();
   };
   if(level==="會員") btn.classList.add("active");
   memberButtons.appendChild(btn);
@@ -136,6 +140,7 @@ Object.keys(membershipFee).forEach(type=>{
     selectedMembership = type;
     document.querySelectorAll(".membership-buttons button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
+    updateSummary();
   };
   if(type==="新會員") btn.classList.add("active");
   membershipButtons.appendChild(btn);
@@ -152,8 +157,13 @@ products.forEach((p,index)=>{
     <td><input type="number" id="qty${index}" min="0" value="0"></td>
   `;
   tableBody.appendChild(row);
+
+  // 監聽輸入變化，實現即時更新
+  const input = row.querySelector("input");
+  input.addEventListener("input", updateSummary);
 });
 
+// 計算贈品
 function anniversaryGiftsByMoney(money){
   if(money>=200000) return ["52,000 天麗幣","天麗隨行杯 3 個"];
   if(money>=100000) return ["21,000 天麗幣","天麗隨行杯 2 個"];
@@ -163,8 +173,9 @@ function anniversaryGiftsByMoney(money){
   return [];
 }
 
-function generateSummary(){
-  let totalMoney = membershipFee[selectedMembership]; // 加入會員資格費用
+// 更新清單與金額（即時更新）
+function updateSummary(){
+  let totalMoney = membershipFee[selectedMembership];
   let totalPV = 0, listHTML="", healthBonusList=[];
 
   products.forEach((p,index)=>{
@@ -205,6 +216,22 @@ function generateSummary(){
 
   document.getElementById("resultBox").innerHTML = result;
 }
+
+// 下載圖片功能
+function downloadAsImage(){
+  const element = document.getElementById("resultBox");
+  html2canvas(element).then(canvas => {
+    const imgData = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = imgData;
+    link.download = "天麗購買清單.png";
+    link.click();
+  });
+}
+
+// 初始顯示
+updateSummary();
 </script>
+
 </body>
 </html>
