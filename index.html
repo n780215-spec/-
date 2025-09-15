@@ -34,12 +34,6 @@ ul { padding-left: 18px; margin: 4px 0; }
 </head>
 <body>
 
-<h2>會員資格</h2>
-<div class="membership-buttons" id="membershipButtons"></div>
-
-<h2>會員等級</h2>
-<div class="level-buttons" id="memberButtons"></div>
-
 <h2>天麗2025周年慶訂單計算</h2>
 
 <div class="table-container">
@@ -56,11 +50,16 @@ ul { padding-left: 18px; margin: 4px 0; }
   </table>
 </div>
 
+<h2>會員資格</h2>
+<div class="membership-buttons" id="membershipButtons"></div>
+
+<h2>會員等級</h2>
+<div class="level-buttons" id="memberButtons"></div>
+
 <div class="result" id="resultBox">
-  👉 請輸入數量，或選擇會員資格、會員等級
+  👉 請輸入數量，選擇會員資格及會員等級
 </div>
 
-<!-- 下載 / 分享按鈕 -->
 <button class="btn" onclick="downloadAsImage()">下載 / 分享清單圖片</button>
 
 <script>
@@ -153,10 +152,16 @@ function updateSummary(){
       if(p.health) for(let i=0;i<Math.floor(qty/8);i++) healthBonusList.push(p.name);
     }
   });
+
   const membershipCost = membershipFee[selectedMembership];
   const totalMoney = productTotal + membershipCost;
+
+  // PV 扣除 28000 如果選擇新會員
+  let effectivePV = totalPV;
+  if(selectedMembership==="新會員") effectivePV = Math.max(0, totalPV - 28000);
+
   const gifts = anniversaryGiftsByMoney(totalMoney);
-  const performanceBonus = totalPV * memberBonusRate[selectedLevel];
+  const performanceBonus = effectivePV * memberBonusRate[selectedLevel];
 
   let result=`<h3>🧾 清單</h3>
   <p>會員資格：<span class="highlight">${selectedMembership}</span> $${membershipCost}</p>
@@ -165,6 +170,7 @@ function updateSummary(){
   <p>💰 會員費用：<span class="highlight">${membershipCost}</span> 元</p>
   <p>💰 總金額：<span class="highlight">${totalMoney}</span> 元</p>
   <p>📊 總 PV：<span class="highlight">${totalPV}</span></p>
+  ${selectedMembership==="新會員" ? `<p>⚠️ 新會員 PV 扣除 28000，業績獎金計算 PV：<span class="highlight">${effectivePV}</span></p>` : ""}
   <p>👤 會員等級：<span class="highlight">${selectedLevel}</span></p>
   <p>🎯 業績獎金：<span class="highlight">${performanceBonus.toFixed(0)}</span> 元</p>`;
 
@@ -206,5 +212,6 @@ function downloadAsImage(){
 // 初始化
 updateSummary();
 </script>
+
 </body>
 </html>
