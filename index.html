@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>天麗周年慶購買清單</title>
 
   <!-- PWA 設定 -->
@@ -11,12 +11,40 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="天麗清單">
-
-  <!-- iOS 桌面圖示 -->
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <!-- CSS -->
+  <style>
+    body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
+    h2, h3 { color: #333; font-size: 16px; margin: 8px 0; }
+
+    .table-container { overflow-x: auto; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+    th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+    th { background: #eee; font-size: 13px; }
+
+    input[type=number] { width: 55px; padding: 4px; text-align: center; font-size: 13px; }
+
+    .btn { padding: 10px; background: #0078D7; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; margin: 8px 0; }
+    .btn:hover { background: #005a9e; }
+
+    .highlight { color: red; font-weight: bold; }
+    .result { margin-top: 8px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-size: 13px; line-height: 1.4; }
+    ul { padding-left: 18px; margin: 4px 0; }
+
+    .level-buttons, .membership-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .level-buttons button, .membership-buttons button {
+      flex: 1; min-width: 70px;
+      padding: 6px; border: 1px solid #ccc; border-radius: 6px;
+      background: #f1f1f1; cursor: pointer; font-size: 12px;
+    }
+    .level-buttons button.active, .membership-buttons button.active {
+      background: #0078D7; color: white; border-color: #0078D7;
+    }
+  </style>
+
+  <!-- Service Worker -->
   <script>
-    // 註冊 Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
       .then(() => console.log("Service Worker 註冊成功"))
@@ -24,45 +52,15 @@
     }
   </script>
 </head>
-  
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>天麗購買清單小工具</title>
-<style>
-  body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
-  h2, h3 { color: #333; font-size: 16px; margin: 8px 0; }
-
-  .table-container { overflow-x: auto; margin-bottom: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
-  th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
-  th { background: #eee; font-size: 13px; }
-
-  input[type=number] { width: 55px; padding: 4px; text-align: center; font-size: 13px; }
-
-  .btn { padding: 10px; background: #0078D7; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; margin: 8px 0; }
-  .btn:hover { background: #005a9e; }
-
-  .highlight { color: red; font-weight: bold; }
-  .result { margin-top: 8px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-size: 13px; line-height: 1.4; }
-  ul { padding-left: 18px; margin: 4px 0; }
-
-  .level-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-  .level-buttons button {
-    flex: 1; min-width: 55px;
-    padding: 6px; border: 1px solid #ccc; border-radius: 6px;
-    background: #f1f1f1; cursor: pointer; font-size: 12px;
-  }
-  .level-buttons button.active {
-    background: #0078D7; color: white; border-color: #0078D7;
-  }
-</style>
-</head>
 <body>
 
-<h2>天麗2025周年慶訂單計算</h2>
+<h2>會員資格</h2>
+<div class="membership-buttons" id="membershipButtons"></div>
 
-<label>會員等級：</label>
+<h2>會員等級</h2>
 <div class="level-buttons" id="memberButtons"></div>
+
+<h2>天麗2025周年慶訂單計算</h2>
 
 <div class="table-container">
   <table>
@@ -127,8 +125,25 @@ Object.keys(memberBonusRate).forEach(level=>{
   memberButtons.appendChild(btn);
 });
 
+// 會員資格
+const membershipFee = { "新會員": 1000, "續約會員": 500 };
+let selectedMembership = "新會員";
+const membershipButtons = document.getElementById("membershipButtons");
+Object.keys(membershipFee).forEach(type=>{
+  const btn = document.createElement("button");
+  btn.textContent = `${type} $${membershipFee[type]}`;
+  btn.onclick = () => {
+    selectedMembership = type;
+    document.querySelectorAll(".membership-buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+  };
+  if(type==="新會員") btn.classList.add("active");
+  membershipButtons.appendChild(btn);
+});
+
+// 產品表格
 const tableBody = document.getElementById("productTable");
-products.forEach((p, index) => {
+products.forEach((p,index)=>{
   const row = document.createElement("tr");
   row.innerHTML = `
     <td>${p.name}</td>
@@ -149,16 +164,18 @@ function anniversaryGiftsByMoney(money){
 }
 
 function generateSummary(){
-  let totalMoney=0, totalPV=0, listHTML="", healthBonusList=[];
+  let totalMoney = membershipFee[selectedMembership]; // 加入會員資格費用
+  let totalPV = 0, listHTML="", healthBonusList=[];
+
   products.forEach((p,index)=>{
-    const qty=parseInt(document.getElementById(`qty${index}`).value)||0;
+    const qty = parseInt(document.getElementById(`qty${index}`).value)||0;
     if(qty>0){
-      listHTML+=`<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
-      totalMoney+=p.price*qty;
-      totalPV+=p.pv*qty;
+      listHTML += `<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
+      totalMoney += p.price*qty;
+      totalPV += p.pv*qty;
       if(p.health){
-        const bonusCount=Math.floor(qty/8);
-        for(let i=0;i<bonusCount;i++){ healthBonusList.push(p.name); }
+        const bonusCount = Math.floor(qty/8);
+        for(let i=0;i<bonusCount;i++) healthBonusList.push(p.name);
       }
     }
   });
@@ -166,7 +183,8 @@ function generateSummary(){
   const gifts = anniversaryGiftsByMoney(totalMoney);
   const performanceBonus = totalPV * memberBonusRate[selectedLevel];
 
-  let result=`<h3>🧾 清單</h3>
+  let result = `<h3>🧾 清單</h3>
+  <p>會員資格：<span class="highlight">${selectedMembership}</span> $${membershipFee[selectedMembership]}</p>
   <ul>${listHTML||"<li>未選購商品</li>"}</ul>
   <p>💰 總金額：<span class="highlight">${totalMoney}</span> 元</p>
   <p>📊 總 PV：<span class="highlight">${totalPV}</span></p>
@@ -174,18 +192,18 @@ function generateSummary(){
   <p>🎯 業績獎金：<span class="highlight">${performanceBonus.toFixed(0)}</span> 元</p>`;
 
   if(healthBonusList.length>0){
-    result+=`<p>保健系列贈品：</p><ul>`;
-    healthBonusList.forEach((item,idx)=>result+=`<li>${idx+1}. ${item}</li>`);
-    result+=`</ul>`;
+    result += `<p>保健系列贈品：</p><ul>`;
+    healthBonusList.forEach((item,idx)=>result += `<li>${idx+1}. ${item}</li>`);
+    result += `</ul>`;
   }
 
   if(gifts.length>0){
-    result+=`<h3>🎁 周年慶贈品</h3><ul>`;
-    gifts.forEach(item=>result+=`<li>${item}</li>`);
-    result+=`</ul>`;
-  } else { result+=`<p>🎁 周年慶贈品：無符合回饋</p>`; }
+    result += `<h3>🎁 周年慶贈品</h3><ul>`;
+    gifts.forEach(item=>result += `<li>${item}</li>`);
+    result += `</ul>`;
+  } else { result += `<p>🎁 周年慶贈品：無符合回饋</p>`; }
 
-  document.getElementById("resultBox").innerHTML=result;
+  document.getElementById("resultBox").innerHTML = result;
 }
 </script>
 </body>
