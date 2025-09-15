@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,17 +11,125 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="天麗清單">
-
-  <!-- iOS 桌面圖示 -->
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #4CAF50; }
+    .product { margin-bottom: 10px; }
+    .btn-level { margin: 3px; padding: 8px 12px; border: none; border-radius: 6px; background: #4CAF50; color: white; }
+    select { padding: 5px; }
+    #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>天麗周年慶購買清單</h1>
+
+  <!-- 會員等級選擇 -->
+  <h3>會員等級</h3>
+  <div id="member-levels">
+    <button class="btn-level" onclick="setLevel('會員', 0)">會員</button>
+    <button class="btn-level" onclick="setLevel('專員', 25)">專員</button>
+    <button class="btn-level" onclick="setLevel('主任', 30)">主任</button>
+    <button class="btn-level" onclick="setLevel('經理', 35)">經理</button>
+    <button class="btn-level" onclick="setLevel('寶石', 37)">寶石</button>
+    <button class="btn-level" onclick="setLevel('鑽石', 38)">鑽石</button>
+    <button class="btn-level" onclick="setLevel('金鑽', 39)">金鑽</button>
+    <button class="btn-level" onclick="setLevel('顧問', 40)">顧問</button>
+  </div>
+
+  <h3>商品列表</h3>
+  <div id="products"></div>
+
+  <button onclick="generateSummary()">生成購買清單</button>
+  <div id="result"></div>
+  <button id="pdfBtn" style="display:none;" onclick="generatePDF()">下載 PDF</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
-    // 註冊 Service Worker
+    // 商品資料
+    const productList = [
+      { code: "P001", name: "紅參精華飲", price: 1200, pv: 100 },
+      { code: "P002", name: "膠原蛋白粉", price: 1500, pv: 120 },
+      { code: "P003", name: "綜合維他命", price: 800, pv: 60 }
+    ];
+
+    let memberLevel = { name: "會員", rate: 0 };
+
+    function setLevel(name, rate) {
+      memberLevel = { name, rate };
+      alert("已選擇會員等級：" + name);
+    }
+
+    function renderProducts() {
+      const container = document.getElementById("products");
+      container.innerHTML = "";
+      productList.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product";
+        div.innerHTML = `
+          <b>${p.code}</b> ${p.name} - $${p.price} / ${p.pv}PV
+          <select id="qty-${p.code}">
+            ${Array.from({length: 21}, (_, i) => `<option value="${i}">${i}</option>`).join("")}
+          </select>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function generateSummary() {
+      let totalAmount = 0, totalPV = 0;
+      let summary = "<h3>購買清單</h3><ul>";
+
+      productList.forEach(p => {
+        const qty = parseInt(document.getElementById("qty-" + p.code).value);
+        if (qty > 0) {
+          const subtotal = p.price * qty;
+          const subPV = p.pv * qty;
+          totalAmount += subtotal;
+          totalPV += subPV;
+          summary += `<li>${p.name} x ${qty} = $${subtotal} / ${subPV}PV</li>`;
+
+          // 買8送1
+          if (qty >= 8) {
+            const freeQty = Math.floor(qty / 8);
+            summary += `<li>🎁 贈送 ${p.name} x ${freeQty}</li>`;
+          }
+        }
+      });
+
+      summary += "</ul>";
+      summary += `<p>商品總額：$${totalAmount}</p>`;
+      summary += `<p>PV 總數：${totalPV}</p>`;
+
+      const bonus = Math.floor(totalPV * memberLevel.rate / 100);
+      summary += `<p>會員等級：${memberLevel.name} (${memberLevel.rate}%)</p>`;
+      summary += `<p>業績獎金：${bonus}</p>`;
+
+      document.getElementById("result").innerHTML = summary;
+      document.getElementById("pdfBtn").style.display = "block";
+    }
+
+    function generatePDF() {
+      const element = document.getElementById("result");
+      html2pdf().from(element).set({
+        margin: 10,
+        filename: "天麗購買清單.pdf",
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      }).save();
+    }
+
+    renderProducts();
+  </script>
+
+  <!-- 註冊 Service Worker -->
+  <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("Service Worker 註冊成功"))
-      .catch(err => console.log("Service Worker 註冊失敗", err));
+        .then(() => console.log("✅ Service Worker 註冊成功"))
+        .catch(err => console.log("❌ Service Worker 失敗", err));
     }
   </script>
-</head>
-
+</body>
+</html>
