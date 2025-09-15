@@ -1,44 +1,44 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>購物清單</title>
+<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+<title>天麗周年慶購買清單</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CAF50"/>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="天麗清單">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
 body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
 h2,h3 { color: #333; font-size: 16px; margin: 8px 0; }
-.table-container { margin-bottom: 8px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-container { overflow-x: auto; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
 th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
 th { background: #eee; font-size: 13px; }
 .quantity-control { display: flex; justify-content: center; align-items: center; gap: 4px; }
 .quantity-control button { padding: 2px 6px; font-size: 14px; }
-.quantity-control input { width: 36px; text-align: center; }
+.quantity-control input { width: 40px; text-align: center; }
 
-button {
-  padding: 6px 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin: 4px 2px;
-}
-button:hover { background: #0056b3; }
+.btn { padding: 10px; background: #0078D7; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; margin: 8px 0; }
+.btn:hover { background: #005a9e; }
+.highlight { color: red; font-weight: bold; }
+.result { margin-top: 8px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-size: 13px; line-height: 1.4; }
+ul { padding-left: 18px; margin: 4px 0; }
+.level-buttons, .membership-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.level-buttons button, .membership-buttons button { flex: 1; min-width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; background: #f1f1f1; cursor: pointer; font-size: 12px; }
+.level-buttons button.active, .membership-buttons button.active { background: #0078D7; color: white; border-color: #0078D7; }
 
-#resultBox {
-  background: white;
-  padding: 10px;
-  border-radius: 10px;
-  margin-top: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-/* 浮動區塊：即時計算總數 */
+/* 浮動區塊 */
 #floatingSummary {
   position: fixed;
   right: 10px;
-  bottom: 70px; /* 避開最下方的下載/分享按鈕 */
+  bottom: 70px;
   background: rgba(0, 123, 255, 0.9);
   color: white;
   padding: 8px 12px;
@@ -47,154 +47,212 @@ button:hover { background: #0056b3; }
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   z-index: 1000;
 }
-
-/* 手機螢幕自動調整 */
-@media (max-width: 480px) {
-  body { font-size: 12px; }
-  table { font-size: 12px; }
-  th, td { padding: 3px; }
-  .quantity-control button { font-size: 12px; padding: 2px 5px; }
-  .quantity-control input { width: 32px; font-size: 12px; }
-}
 </style>
 </head>
 <body>
-<h2>購物清單</h2>
+
+<h2>天麗2025周年慶訂單計算</h2>
 
 <div class="table-container">
-  <table id="productTable">
+  <table>
     <thead>
-      <tr><th>商品名稱</th><th>價格</th><th>PV</th><th>數量</th></tr>
+      <tr>
+        <th>產品</th>
+        <th>價格</th>
+        <th>PV</th>
+        <th>數量</th>
+      </tr>
     </thead>
-    <tbody>
-      <tr><td>商品A</td><td>1000</td><td>500</td><td class="quantity-control"><button onclick="changeQty(this,-1)">-</button><input type="number" value="0" min="0" onchange="updateSummary()"><button onclick="changeQty(this,1)">+</button></td></tr>
-      <tr><td>商品B</td><td>2000</td><td>1200</td><td class="quantity-control"><button onclick="changeQty(this,-1)">-</button><input type="number" value="0" min="0" onchange="updateSummary()"><button onclick="changeQty(this,1)">+</button></td></tr>
-      <tr><td>保健品</td><td>1500</td><td>800</td><td class="quantity-control"><button onclick="changeQty(this,-1)">-</button><input type="number" value="0" min="0" onchange="updateSummary()"><button onclick="changeQty(this,1)">+</button></td></tr>
-    </tbody>
+    <tbody id="productTable"></tbody>
   </table>
 </div>
 
-<h3>會員資格</h3>
-<button onclick="setMembership('new')">入會費 $1000</button>
-<button onclick="setMembership('renew')">續約費 $500</button>
-<button onclick="setMembership('noneed')">不需繳納續約費 $0</button>
+<h2>會員資格</h2>
+<div class="membership-buttons" id="membershipButtons"></div>
 
-<h3>會員等級</h3>
-<button onclick="setLevel('銀級')">銀級</button>
-<button onclick="setLevel('金級')">金級</button>
-<button onclick="setLevel('鑽石級')">鑽石級</button>
+<h2>會員等級</h2>
+<div class="level-buttons" id="memberButtons"></div>
 
-<h3>最終清單</h3>
-<div id="resultBox"></div>
-
-<!-- 圖片生成/下載 / 分享到Line -->
-<div style="margin-top: 15px; text-align: center;">
-  <button onclick="downloadImage()">下載清單圖片</button>
-  <button onclick="shareToLine()">分享到Line</button>
+<div class="result" id="resultBox">
+  👉 請輸入數量，選擇會員資格及會員等級
 </div>
+
+<!-- 功能按鈕 -->
+<button class="btn" onclick="downloadAsImage()">📥 下載清單圖片</button>
+<button class="btn" onclick="resetForm()">🔄 重新整理</button>
 
 <!-- 浮動區塊 -->
 <div id="floatingSummary">
-  商品總價：<span id="floatTotalPrice">0</span> 元<br>
-  商品總PV：<span id="floatTotalPV">0</span>
+  💰 商品總價：<span id="floatTotalPrice">0</span> 元<br>
+  📊 商品總PV：<span id="floatTotalPV">0</span>
 </div>
 
-<!-- 匯入 html2canvas -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 <script>
-let membership = "";
-let membershipFee = 0;
-let level = "";
+const products = [
+  { code: "A1", name: "A1深層潔膚油", price: 1995, pv: 1700, health: false },
+  { code: "1", name: "1 雙效潔顏露", price: 1995, pv: 1700, health: false },
+  { code: "2", name: "2 平衡柔膚露", price: 1995, pv: 1700, health: false },
+  { code: "3", name: "3 全效緊緻眼霜", price: 3990, pv: 3500, health: false },
+  { code: "4", name: "4 煥白晶華霜", price: 4200, pv: 3600, health: false },
+  { code: "5", name: "5 均衡調理霜", price: 4200, pv: 3600, health: false },
+  { code: "6A", name: "6A 亮白防曬", price: 3990, pv: 3500, health: false },
+  { code: "6B", name: "6B 潤白防曬", price: 3990, pv: 3500, health: false },
+  { code: "8", name: "8 賦活晶華霜", price: 3990, pv: 3500, health: false },
+  { code: "9", name: "9 保濕修護霜", price: 2415, pv: 1800, health: false },
+  { code: "10", name: "10 C液", price: 3465, pv: 3000, health: false },
+  { code: "12", name: "12 煥采青春露", price: 2415, pv: 1800, health: false },
+  { code: "13", name: "Bio 雪肌面膜", price: 2415, pv: 1800, health: false },
+  { code: "C1", name: "C粉/瓶", price: 3465, pv: 3000, health: false },
+  { code: "C10", name: "C粉/10瓶/盒", price: 29400, pv: 26000, health: false },
+  { code: "H1", name: "青春元素-F", price: 1995, pv: 1700, health: true },
+  { code: "H2", name: "青春元素-L", price: 1995, pv: 1700, health: true },
+  { code: "H3", name: "纖麗2代", price: 2625, pv: 2300, health: true },
+  { code: "H4", name: "纖麗S1", price: 2625, pv: 2300, health: true },
+  { code: "H5", name: "橄欖油", price: 3210, pv: 2400, health: true },
+  { code: "H6", name: "紅參精華飲", price: 3210, pv: 2400, health: true }
+];
 
-// 修改數量
-function changeQty(btn, delta) {
-  const input = btn.parentNode.querySelector("input");
-  input.value = Math.max(0, parseInt(input.value) + delta);
+const memberBonusRate={ "會員":0,"專員":0.25,"主任":0.3,"經理":0.35,"寶石":0.37,"鑽石":0.38,"金鑽":0.39,"顧問":0.4 };
+let selectedLevel="會員";
+let selectedMembership="新會員";
+const membershipFee={ "新會員":1000,"續約會員":500,"不需繳納續約費":0 };
+
+// 建立會員等級按鈕
+const memberButtons=document.getElementById("memberButtons");
+Object.keys(memberBonusRate).forEach(level=>{
+  const btn=document.createElement("button");
+  btn.textContent=level;
+  btn.onclick=()=>{
+    selectedLevel=level;
+    document.querySelectorAll(".level-buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    updateSummary();
+  };
+  if(level==="會員") btn.classList.add("active");
+  memberButtons.appendChild(btn);
+});
+
+// 建立會員資格按鈕
+const membershipButtons=document.getElementById("membershipButtons");
+Object.keys(membershipFee).forEach(type=>{
+  const displayText=type==="不需繳納續約費"? "不需繳納續約費 $0" : `${type} $${membershipFee[type]}`;
+  const btn=document.createElement("button");
+  btn.textContent=displayText;
+  btn.onclick=()=>{
+    selectedMembership=type;
+    document.querySelectorAll(".membership-buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    updateSummary();
+  };
+  if(type==="新會員") btn.classList.add("active");
+  membershipButtons.appendChild(btn);
+});
+
+// 商品表格
+const tableBody=document.getElementById("productTable");
+products.forEach((p,index)=>{
+  const row=document.createElement("tr");
+  row.innerHTML=`<td>${p.name}</td><td>${p.price}</td><td>${p.pv}</td>
+  <td class="quantity-control">
+    <button onclick="changeQty(${index},-1)">-</button>
+    <input type="number" id="qty${index}" min="0" value="0" readonly>
+    <button onclick="changeQty(${index},1)">+</button>
+  </td>`;
+  tableBody.appendChild(row);
+});
+
+// 改變數量
+function changeQty(index,delta){
+  const input=document.getElementById(`qty${index}`);
+  let val=parseInt(input.value)||0;
+  val=Math.max(0,val+delta);
+  input.value=val;
   updateSummary();
 }
 
-function setMembership(type) {
-  if (type === "new") { membership = "入會費"; membershipFee = 1000; }
-  else if (type === "renew") { membership = "續約費"; membershipFee = 500; }
-  else if (type === "noneed") { membership = "已繳納續約費"; membershipFee = 0; }
-  updateSummary();
+// 贈品（取最大獎勵）
+function anniversaryGiftsByMoney(money){
+  if(money>=200000) return ["52,000 天麗幣","天麗隨行杯 3 個"];
+  if(money>=100000) return ["21,000 天麗幣","天麗隨行杯 2 個"];
+  if(money>=50000) return ["6A ×1","9號 ×1","12號 ×1","天麗隨行杯 1 個"];
+  if(money>=32000) return ["贈品 2號 ×1","贈品 9號 ×1"];
+  if(money>=19000) return ["贈品 2號 ×1"];
+  return [];
 }
 
-function setLevel(lv) { level = lv; updateSummary(); }
-
-function updateSummary() {
-  const rows = document.querySelectorAll("#productTable tbody tr");
-  let details = "";
-  let totalPrice = 0;
-  let totalPV = 0;
-  let healthCount = 0;
-
-  rows.forEach(row => {
-    const name = row.cells[0].innerText;
-    const price = parseInt(row.cells[1].innerText);
-    const pv = parseInt(row.cells[2].innerText);
-    const qty = parseInt(row.querySelector("input").value);
-    if (qty > 0) {
-      details += `${name} x${qty} = ${price*qty}元, PV=${pv*qty}<br>`;
-      totalPrice += price*qty;
-      totalPV += pv*qty;
-      if (name.includes("保健品")) healthCount += qty;
+// 更新清單
+function updateSummary(){
+  let productTotal=0,totalPV=0,listHTML="",healthBonusList=[];
+  products.forEach((p,index)=>{
+    const qty=parseInt(document.getElementById(`qty${index}`).value)||0;
+    if(qty>0){
+      listHTML+=`<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
+      productTotal+=p.price*qty;
+      totalPV+=p.pv*qty;
+      if(p.health) for(let i=0;i<Math.floor(qty/8);i++) healthBonusList.push(p.name);
     }
   });
 
-  // 保健品滿 8 件，送 1 件同商品
-  if (healthCount >= 8) details += `🎁 贈品：保健品 ${Math.floor(healthCount/8)} 件<br>`;
+  let membershipCost=membershipFee[selectedMembership];
+  let membershipLabel=selectedMembership==="新會員"? "入會費":selectedMembership==="續約會員"? "續約費":"已繳納續約費";
+  let totalMoney=productTotal+(selectedMembership==="不需繳納續約費"?0:membershipCost);
 
-  // 計算贈品（取最大獎勵）
-  let gift = "";
-  if (totalPV >= 200000) gift = "🎁 天麗幣52000元、隨行杯3個";
-  else if (totalPV >= 50000) gift = "🎁 6A號1瓶、9號1瓶、12號1瓶、隨行杯1個";
-  else if (totalPV >= 32000) gift = "🎁 2號1瓶、9號1瓶";
-  else if (totalPV >= 19000) gift = "🎁 2號1瓶";
-  else if (totalPV >= 100000) gift = "🎁 天麗幣21000元、隨行杯2個";
+  let effectivePV=totalPV;
+  if(selectedMembership==="新會員") effectivePV=Math.max(0,totalPV-28001);
 
-  if (gift) details += gift + "<br>";
+  const gifts=anniversaryGiftsByMoney(totalMoney);
+  const performanceBonus=effectivePV*memberBonusRate[selectedLevel];
 
-  // PV 扣除新會員 28000
-  let finalPV = (membership === "入會費") ? Math.max(0, totalPV - 28001) : totalPV;
-  let bonus = finalPV * 0.1;
+  let result=`<h3>🧾 清單</h3>
+  <ul>${listHTML||"<li>未選購商品</li>"}</ul>
+  <p>💰 商品總價：<span class="highlight">${productTotal}</span> 元</p>
+  <p>📊 總 PV：<span class="highlight">${totalPV}</span></p>
+  <p>💰 ${membershipLabel}：<span class="highlight">${membershipCost>0?membershipCost:""}</span></p>
+  <p>💰 總金額：<span class="highlight">${totalMoney}</span> 元</p>
+  <p>👤 會員等級：<span class="highlight">${selectedLevel}</span></p>
+  ${selectedMembership==="新會員"? `<p>⚠️ 新會員 PV 扣除 28001，業績獎金計算 PV：<span class="highlight">${effectivePV}</span></p>`:""}
+  <p>🎯 業績獎金：<span class="highlight">${performanceBonus.toFixed(0)}</span> 元</p>`;
 
-  let result = "";
-  result += details || "（尚未選購商品）<br>";
-  result += `商品總價：${totalPrice} 元<br>`;
-  result += `總PV數：${totalPV}<br>`;
-  if (membership === "已繳納續約費") {
-    result += `會員費用：已繳納續約費<br>`;
-  } else if (membership) {
-    result += `會員費用：${membership} ${membershipFee} 元<br>`;
+  if(healthBonusList.length>0){
+    result+=`<p>保健系列贈品：</p><ul>`;
+    healthBonusList.forEach((item,idx)=>result+=`<li>${idx+1}. ${item}</li>`);
+    result+=`</ul>`;
   }
-  result += `總金額：${totalPrice + membershipFee} 元<br>`;
-  if (level) result += `會員等級：${level}<br>`;
-  result += `業績獎金：${bonus} 元<br>`;
 
-  document.getElementById("resultBox").innerHTML = result;
+  if(gifts.length>0){
+    result+=`<h3>🎁 周年慶贈品</h3><ul>`;
+    gifts.forEach(item=>result+=`<li>${item}</li>`);
+    result+=`</ul>`;
+  } else { result+=`<p>🎁 周年慶贈品：無符合回饋</p>`; }
+
+  document.getElementById("resultBox").innerHTML=result;
 
   // 更新浮動區塊
-  document.getElementById("floatTotalPrice").innerText = totalPrice;
-  document.getElementById("floatTotalPV").innerText = totalPV;
+  document.getElementById("floatTotalPrice").innerText=productTotal;
+  document.getElementById("floatTotalPV").innerText=totalPV;
+}
+
+// 重設表單
+function resetForm(){
+  products.forEach((p,index)=>{ document.getElementById(`qty${index}`).value=0; });
+  selectedLevel="會員";
+  selectedMembership="新會員";
+  document.querySelectorAll(".level-buttons button, .membership-buttons button").forEach(b=>b.classList.remove("active"));
+  document.querySelector(".level-buttons button").classList.add("active");
+  document.querySelector(".membership-buttons button").classList.add("active");
+  updateSummary();
 }
 
 // 下載清單圖片
-function downloadImage() {
-  html2canvas(document.getElementById("resultBox")).then(canvas => {
-    const link = document.createElement("a");
-    link.download = "shopping_list.png";
-    link.href = canvas.toDataURL();
+function downloadAsImage(){
+  const element=document.getElementById("resultBox");
+  html2canvas(element,{backgroundColor:"#ffffff",scale:2}).then(canvas=>{
+    const imgData=canvas.toDataURL("image/png");
+    const link=document.createElement("a");
+    link.href=imgData;
+    link.download="天麗購買清單.png";
     link.click();
   });
-}
-
-// 分享到Line（文字清單）
-function shareToLine() {
-  const text = document.getElementById("resultBox").innerText;
-  const url = "https://line.me/R/msg/text/?" + encodeURIComponent(text);
-  window.open(url);
 }
 
 // 初始化
