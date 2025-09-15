@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>天麗周年慶購買清單</title>
 
-<!-- PWA 設定 -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4CAF50"/>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,12 +12,11 @@
 <meta name="apple-mobile-web-app-title" content="天麗清單">
 <link rel="apple-touch-icon" href="icon-192.png">
 
-<!-- html2canvas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
 body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
-h2, h3 { color: #333; font-size: 16px; margin: 8px 0; }
+h2,h3 { color: #333; font-size: 16px; margin: 8px 0; }
 .table-container { overflow-x: auto; margin-bottom: 8px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
 th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
@@ -33,12 +31,6 @@ ul { padding-left: 18px; margin: 4px 0; }
 .level-buttons button, .membership-buttons button { flex: 1; min-width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; background: #f1f1f1; cursor: pointer; font-size: 12px; }
 .level-buttons button.active, .membership-buttons button.active { background: #0078D7; color: white; border-color: #0078D7; }
 </style>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').then(() => console.log("Service Worker 註冊成功")).catch(err => console.log("Service Worker 註冊失敗", err));
-}
-</script>
 </head>
 <body>
 
@@ -49,9 +41,6 @@ if ('serviceWorker' in navigator) {
 <div class="level-buttons" id="memberButtons"></div>
 
 <h2>天麗2025周年慶訂單計算</h2>
-
-<!-- 產生清單按鈕 -->
-<button class="btn" onclick="updateSummary()">產生清單</button>
 
 <div class="table-container">
   <table>
@@ -67,12 +56,12 @@ if ('serviceWorker' in navigator) {
   </table>
 </div>
 
-<!-- 下載 / 分享按鈕 -->
-<button class="btn" onclick="downloadAsImage()">下載 / 分享清單圖片</button>
-
 <div class="result" id="resultBox">
   👉 請輸入數量，或選擇會員資格、會員等級
 </div>
+
+<!-- 下載 / 分享按鈕 -->
+<button class="btn" onclick="downloadAsImage()">下載 / 分享清單圖片</button>
 
 <script>
 const products = [
@@ -154,13 +143,13 @@ function anniversaryGiftsByMoney(money){
 
 // 更新清單
 function updateSummary(){
-  let productTotal = 0, totalPV = 0, listHTML="", healthBonusList=[];
+  let productTotal=0, totalPV=0, listHTML="", healthBonusList=[];
   products.forEach((p,index)=>{
-    const qty = parseInt(document.getElementById(`qty${index}`).value)||0;
+    const qty=parseInt(document.getElementById(`qty${index}`).value)||0;
     if(qty>0){
-      listHTML += `<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
-      productTotal += p.price*qty;
-      totalPV += p.pv*qty;
+      listHTML+=`<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
+      productTotal+=p.price*qty;
+      totalPV+=p.pv*qty;
       if(p.health) for(let i=0;i<Math.floor(qty/8);i++) healthBonusList.push(p.name);
     }
   });
@@ -169,7 +158,7 @@ function updateSummary(){
   const gifts = anniversaryGiftsByMoney(totalMoney);
   const performanceBonus = totalPV * memberBonusRate[selectedLevel];
 
-  let result = `<h3>🧾 清單</h3>
+  let result=`<h3>🧾 清單</h3>
   <p>會員資格：<span class="highlight">${selectedMembership}</span> $${membershipCost}</p>
   <ul>${listHTML||"<li>未選購商品</li>"}</ul>
   <p>💰 商品總價：<span class="highlight">${productTotal}</span> 元</p>
@@ -180,36 +169,36 @@ function updateSummary(){
   <p>🎯 業績獎金：<span class="highlight">${performanceBonus.toFixed(0)}</span> 元</p>`;
 
   if(healthBonusList.length>0){
-    result += `<p>保健系列贈品：</p><ul>`;
+    result+=`<p>保健系列贈品：</p><ul>`;
     healthBonusList.forEach((item,idx)=>result+=`<li>${idx+1}. ${item}</li>`);
-    result += `</ul>`;
+    result+=`</ul>`;
   }
-  if(gifts.length>0){
-    result += `<h3>🎁 周年慶贈品</h3><ul>`;
-    gifts.forEach(item=>result+=`<li>${item}</li>`);
-    result += `</ul>`;
-  } else { result += `<p>🎁 周年慶贈品：無符合回饋</p>`; }
 
-  document.getElementById("resultBox").innerHTML = result;
+  if(gifts.length>0){
+    result+=`<h3>🎁 周年慶贈品</h3><ul>`;
+    gifts.forEach(item=>result+=`<li>${item}</li>`);
+    result+=`</ul>`;
+  } else { result+=`<p>🎁 周年慶贈品：無符合回饋</p>`; }
+
+  document.getElementById("resultBox").innerHTML=result;
 }
 
 // 下載 / 分享圖片
 function downloadAsImage(){
-  const element = document.getElementById("resultBox");
-  html2canvas(element, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
-    const padding = 20;
-    const paddedCanvas = document.createElement("canvas");
-    paddedCanvas.width = canvas.width + padding*2;
-    paddedCanvas.height = canvas.height + padding*2;
-    const ctx = paddedCanvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
-    ctx.drawImage(canvas, padding, padding);
-
-    const imgData = paddedCanvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = imgData;
-    link.download = "天麗購買清單.png";
+  const element=document.getElementById("resultBox");
+  html2canvas(element,{backgroundColor:"#ffffff",scale:2}).then(canvas=>{
+    const padding=20;
+    const paddedCanvas=document.createElement("canvas");
+    paddedCanvas.width=canvas.width+padding*2;
+    paddedCanvas.height=canvas.height+padding*2;
+    const ctx=paddedCanvas.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,paddedCanvas.width,paddedCanvas.height);
+    ctx.drawImage(canvas,padding,padding);
+    const imgData=paddedCanvas.toDataURL("image/png");
+    const link=document.createElement("a");
+    link.href=imgData;
+    link.download="天麗購買清單.png";
     link.click();
   });
 }
@@ -217,6 +206,5 @@ function downloadAsImage(){
 // 初始化
 updateSummary();
 </script>
-
 </body>
 </html>
