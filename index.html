@@ -1,135 +1,168 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天麗周年慶購買清單</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>天麗購買清單小工具</title>
+<style>
+  body { font-family: "Microsoft JhengHei", sans-serif; padding: 8px; background: #f9f9f9; font-size: 13px; }
+  h2, h3 { color: #333; font-size: 16px; margin: 8px 0; }
 
-  <!-- PWA 設定 -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4CAF50"/>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="天麗清單">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  .table-container { overflow-x: auto; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+  th { background: #eee; font-size: 13px; }
 
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #4CAF50; }
-    .product { margin-bottom: 10px; }
-    .btn-level { margin: 3px; padding: 8px 12px; border: none; border-radius: 6px; background: #4CAF50; color: white; }
-    select { padding: 5px; }
-    #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
-  </style>
+  input[type=number] { width: 55px; padding: 4px; text-align: center; font-size: 13px; }
+
+  .btn { padding: 10px; background: #0078D7; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; margin: 8px 0; }
+  .btn:hover { background: #005a9e; }
+
+  .highlight { color: red; font-weight: bold; }
+  .result { margin-top: 8px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-size: 13px; line-height: 1.4; }
+  ul { padding-left: 18px; margin: 4px 0; }
+
+  .level-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .level-buttons button {
+    flex: 1; min-width: 55px;
+    padding: 6px; border: 1px solid #ccc; border-radius: 6px;
+    background: #f1f1f1; cursor: pointer; font-size: 12px;
+  }
+  .level-buttons button.active {
+    background: #0078D7; color: white; border-color: #0078D7;
+  }
+</style>
 </head>
 <body>
-  <h1>天麗周年慶購買清單</h1>
 
-  <!-- 會員等級選擇 -->
-  <h3>會員等級</h3>
-  <div id="member-levels">
-    <button class="btn-level" onclick="setLevel('會員', 0)">會員</button>
-    <button class="btn-level" onclick="setLevel('專員', 25)">專員</button>
-    <button class="btn-level" onclick="setLevel('主任', 30)">主任</button>
-    <button class="btn-level" onclick="setLevel('經理', 35)">經理</button>
-    <button class="btn-level" onclick="setLevel('寶石', 37)">寶石</button>
-    <button class="btn-level" onclick="setLevel('鑽石', 38)">鑽石</button>
-    <button class="btn-level" onclick="setLevel('金鑽', 39)">金鑽</button>
-    <button class="btn-level" onclick="setLevel('顧問', 40)">顧問</button>
-  </div>
+<h2>天麗2025周年慶訂單計算</h2>
 
-  <h3>商品列表</h3>
-  <div id="products"></div>
+<label>會員等級：</label>
+<div class="level-buttons" id="memberButtons"></div>
 
-  <button onclick="generateSummary()">生成購買清單</button>
-  <div id="result"></div>
-  <button id="pdfBtn" style="display:none;" onclick="generatePDF()">下載 PDF</button>
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>產品</th>
+        <th>價格</th>
+        <th>PV</th>
+        <th>數量</th>
+      </tr>
+    </thead>
+    <tbody id="productTable"></tbody>
+  </table>
+</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script>
-    // 商品資料
-    const productList = [
-      { code: "P001", name: "紅參精華飲", price: 1200, pv: 100 },
-      { code: "P002", name: "膠原蛋白粉", price: 1500, pv: 120 },
-      { code: "P003", name: "綜合維他命", price: 800, pv: 60 }
-    ];
+<button class="btn" onclick="generateSummary()">產生購買清單</button>
 
-    let memberLevel = { name: "會員", rate: 0 };
+<div class="result" id="resultBox">
+  👉 請輸入數量後點選「產生購買清單」
+</div>
 
-    function setLevel(name, rate) {
-      memberLevel = { name, rate };
-      alert("已選擇會員等級：" + name);
+<script>
+const products = [
+  { code: "A1", name: "A1深層修護精油", price: 1995, pv: 1700, health: false },
+  { code: "1", name: "1 雙效潔顏露", price: 1995, pv: 1700, health: false },
+  { code: "2", name: "2 平衡柔膚露", price: 1995, pv: 1700, health: false },
+  { code: "3", name: "3 全效緊緻眼霜", price: 3990, pv: 3500, health: false },
+  { code: "4", name: "4 煥白晶華霜", price: 4200, pv: 3600, health: false },
+  { code: "5", name: "5 均衡調理霜", price: 4200, pv: 3600, health: false },
+  { code: "6A", name: "6A 亮白防曬", price: 3990, pv: 3500, health: false },
+  { code: "6B", name: "6B 潤白防曬", price: 3990, pv: 3500, health: false },
+  { code: "8", name: "8 賦活晶華霜", price: 3990, pv: 3500, health: false },
+  { code: "9", name: "9 保濕修護霜", price: 2415, pv: 1800, health: false },
+  { code: "10", name: "10 C液", price: 3465, pv: 3000, health: false },
+  { code: "12", name: "12 煥采青春露", price: 2415, pv: 1800, health: false },
+  { code: "C1", name: "C粉/瓶", price: 3465, pv: 3000, health: false },
+  { code: "C10", name: "C粉/10瓶/盒", price: 29400, pv: 26000, health: false },
+  { code: "H1", name: "青春元素-F 30包", price: 1995, pv: 1700, health: true },
+  { code: "H2", name: "青春元素-L 30包", price: 1995, pv: 1700, health: true },
+  { code: "H3", name: "纖麗 30包", price: 2625, pv: 2300, health: true },
+  { code: "H4", name: "纖麗S1 30包", price: 2625, pv: 2300, health: true },
+  { code: "H5", name: "橄欖油", price: 3210, pv: 2400, health: true },
+  { code: "H6", name: "紅參精華飲", price: 3210, pv: 2400, health: true }
+];
+
+const memberBonusRate = {
+  "會員": 0.00, "專員": 0.25, "主任": 0.30, "經理": 0.35,
+  "寶石": 0.37, "鑽石": 0.38, "金鑽": 0.39, "顧問": 0.40
+};
+let selectedLevel = "會員";
+
+const memberButtons = document.getElementById("memberButtons");
+Object.keys(memberBonusRate).forEach(level=>{
+  const btn = document.createElement("button");
+  btn.textContent = level;
+  btn.onclick = () => {
+    selectedLevel = level;
+    document.querySelectorAll(".level-buttons button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+  };
+  if(level==="會員") btn.classList.add("active");
+  memberButtons.appendChild(btn);
+});
+
+const tableBody = document.getElementById("productTable");
+products.forEach((p, index) => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${p.name}</td>
+    <td>${p.price}</td>
+    <td>${p.pv}</td>
+    <td><input type="number" id="qty${index}" min="0" value="0"></td>
+  `;
+  tableBody.appendChild(row);
+});
+
+function anniversaryGiftsByMoney(money){
+  if(money>=200000) return ["52,000 天麗幣","天麗隨行杯 3 個"];
+  if(money>=100000) return ["21,000 天麗幣","天麗隨行杯 2 個"];
+  if(money>=50000) return ["6A ×1","9號 ×1","12號 ×1","天麗隨行杯 1 個"];
+  if(money>=32000) return ["贈品 2號 ×1","贈品 9號 ×1"];
+  if(money>=19000) return ["贈品 2號 ×1"];
+  return [];
+}
+
+function generateSummary(){
+  let totalMoney=0, totalPV=0, listHTML="", healthBonusList=[];
+  products.forEach((p,index)=>{
+    const qty=parseInt(document.getElementById(`qty${index}`).value)||0;
+    if(qty>0){
+      listHTML+=`<li>${p.name} × ${qty} = ${p.price*qty} 元 / PV ${p.pv*qty}</li>`;
+      totalMoney+=p.price*qty;
+      totalPV+=p.pv*qty;
+      if(p.health){
+        const bonusCount=Math.floor(qty/8);
+        for(let i=0;i<bonusCount;i++){ healthBonusList.push(p.name); }
+      }
     }
+  });
 
-    function renderProducts() {
-      const container = document.getElementById("products");
-      container.innerHTML = "";
-      productList.forEach(p => {
-        const div = document.createElement("div");
-        div.className = "product";
-        div.innerHTML = `
-          <b>${p.code}</b> ${p.name} - $${p.price} / ${p.pv}PV
-          <select id="qty-${p.code}">
-            ${Array.from({length: 21}, (_, i) => `<option value="${i}">${i}</option>`).join("")}
-          </select>
-        `;
-        container.appendChild(div);
-      });
-    }
+  const gifts = anniversaryGiftsByMoney(totalMoney);
+  const performanceBonus = totalPV * memberBonusRate[selectedLevel];
 
-    function generateSummary() {
-      let totalAmount = 0, totalPV = 0;
-      let summary = "<h3>購買清單</h3><ul>";
+  let result=`<h3>🧾 清單</h3>
+  <ul>${listHTML||"<li>未選購商品</li>"}</ul>
+  <p>💰 總金額：<span class="highlight">${totalMoney}</span> 元</p>
+  <p>📊 總 PV：<span class="highlight">${totalPV}</span></p>
+  <p>👤 會員等級：<span class="highlight">${selectedLevel}</span></p>
+  <p>🎯 業績獎金：<span class="highlight">${performanceBonus.toFixed(0)}</span> 元</p>`;
 
-      productList.forEach(p => {
-        const qty = parseInt(document.getElementById("qty-" + p.code).value);
-        if (qty > 0) {
-          const subtotal = p.price * qty;
-          const subPV = p.pv * qty;
-          totalAmount += subtotal;
-          totalPV += subPV;
-          summary += `<li>${p.name} x ${qty} = $${subtotal} / ${subPV}PV</li>`;
+  if(healthBonusList.length>0){
+    result+=`<p>保健系列贈品：</p><ul>`;
+    healthBonusList.forEach((item,idx)=>result+=`<li>${idx+1}. ${item}</li>`);
+    result+=`</ul>`;
+  }
 
-          // 買8送1
-          if (qty >= 8) {
-            const freeQty = Math.floor(qty / 8);
-            summary += `<li>🎁 贈送 ${p.name} x ${freeQty}</li>`;
-          }
-        }
-      });
+  if(gifts.length>0){
+    result+=`<h3>🎁 周年慶贈品</h3><ul>`;
+    gifts.forEach(item=>result+=`<li>${item}</li>`);
+    result+=`</ul>`;
+  } else { result+=`<p>🎁 周年慶贈品：無符合回饋</p>`; }
 
-      summary += "</ul>";
-      summary += `<p>商品總額：$${totalAmount}</p>`;
-      summary += `<p>PV 總數：${totalPV}</p>`;
-
-      const bonus = Math.floor(totalPV * memberLevel.rate / 100);
-      summary += `<p>會員等級：${memberLevel.name} (${memberLevel.rate}%)</p>`;
-      summary += `<p>業績獎金：${bonus}</p>`;
-
-      document.getElementById("result").innerHTML = summary;
-      document.getElementById("pdfBtn").style.display = "block";
-    }
-
-    function generatePDF() {
-      const element = document.getElementById("result");
-      html2pdf().from(element).set({
-        margin: 10,
-        filename: "天麗購買清單.pdf",
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-      }).save();
-    }
-
-    renderProducts();
-  </script>
-
-  <!-- 註冊 Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log("✅ Service Worker 註冊成功"))
-        .catch(err => console.log("❌ Service Worker 失敗", err));
-    }
-  </script>
+  document.getElementById("resultBox").innerHTML=result;
+}
+</script>
 </body>
 </html>
